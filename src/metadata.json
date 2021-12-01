@@ -1,0 +1,13 @@
+{
+  "name": "Dominant color",
+  "description": "Set overview and panel background color to wallpaper's primary color",
+  "uuid": "dominant-color@aunetx",
+  "url": "https://github.com/aunetx/dominant-color",
+  "shell-version": [
+    "41"
+  ],
+  "version": 1,
+  "session-modes": [
+    "user"
+  ]
+}
