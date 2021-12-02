@@ -1,0 +1,8 @@
+#panel {
+    background: transparent;
+}
+
+.edit-folder-button {
+    background: rgba(0, 0, 0, 0.12);
+    border-radius: 19px;
+}

@@ -31,6 +31,34 @@ class Extension {
         });
         this.update_color();
         this.remove_panel_corners();
+        this.connect_panel_hide();
+    }
+
+    // hide panel background in overview not to overlap appfolder view
+    connect_panel_hide() {
+        this.appdisplay_show_id = Main.overview._overview._controls._appDisplay.connect('show', () => {
+            this.set_panel_opacity(0);
+        })
+        this.appdisplay_hide_id = Main.overview._overview._controls._appDisplay.connect('hide', () => {
+            this.set_panel_opacity(255);
+        })
+        this.overview_hide_id = Main.overview.connect('hiding', () => {
+            this.set_panel_opacity(255);
+        })
+    }
+
+    disconnect_panel_hide() {
+        try {
+            Main.overview._overview._controls._appDisplay.disconnect(this.appdisplay_show_id);
+            Main.overview._overview._controls._appDisplay.disconnect(this.appdisplay_hide_id);
+            Main.overview.disconnect(this.panel_hide_id);
+        } catch (e) { }
+    }
+
+    set_panel_opacity(opacity) {
+        let c = Main.panel.get_background_color();
+        c.alpha = opacity;
+        Main.panel.set_background_color(c);
     }
 
     remove_panel_corners() {
@@ -83,28 +111,49 @@ class Extension {
     }
 
     apply_color(color) {
+        // 0: colors definitions
         let color_str = color.to_string().slice(0, -2);
-
-        Main.overview._overview.set_style(this.bg_color(color_str));
-        Main.panel.set_style(this.bg_color(color_str));
-
         let lighter_color = color.lighten();
         let lighter_color_str = lighter_color.to_string().slice(0, -2);
 
+        // 1: overview
+        Main.overview._overview.set_style(this.bg_color(color_str));
+
+        // 2: panel
+        Main.panel.set_background_color(color.copy());
+
+        // 3: dash
         Main.overview.dash._background.set_style(this.bg_color(lighter_color_str));
 
+        // 4: appfolders
         if (Main.overview._overview.controls._appDisplay._folderIcons.length > 0) {
-            this.apply_to_appfolder_icons(lighter_color_str);
+            this.apply_to_appfolders(color_str, lighter_color_str);
         }
-        Main.overview._overview.controls._appDisplay.disconnect(this.appfolder_icons_id);
+        // re-apply if anything changed
+        if (this.appfolder_icons_id)
+            Main.overview._overview.controls._appDisplay.disconnect(this.appfolder_icons_id);
         this.appfolder_icons_id = Main.overview._overview.controls._appDisplay.connect('view-loaded', () => {
-            this.apply_to_appfolder_icons(lighter_color_str);
+            this.apply_to_appfolders(color_str, lighter_color_str);
         })
+
+        // 5: panel menus
+        Main.panel.get_children().forEach(side => {
+            side.get_children().forEach(button => {
+                try {
+                    button.get_child_at_index(0).menu.box.set_style(this.bg_color(lighter_color_str) + "border-radius:12px;");
+                } catch (e) { }
+            });
+        });
     }
 
-    apply_to_appfolder_icons(color) {
+    apply_to_appfolders(color, lighter_color) {
         Main.overview._overview.controls._appDisplay._folderIcons.forEach(icon => {
-            icon.set_style(this.bg_color(color));
+            // for the icon
+            icon.set_style(this.bg_color(lighter_color));
+
+            // for the dialog
+            icon._ensureFolderDialog();
+            icon._dialog._viewBox.set_style(this.bg_color(color));
         });
     }
 
@@ -122,15 +171,30 @@ class Extension {
     disable() {
         this.background_settings.disconnect(this.background_changed_id);
         Main.layoutManager.disconnect(this.startup_complete_id);
+        Main.overview._overview.controls._appDisplay.disconnect(this.appfolder_icons_id);
 
-        Main.overview._overview.set_background_color(null);
+        Main.overview._overview.set_style(null);
         Main.panel.set_background_color(null);
+        Main.overview.dash._background.set_style(null);
+        Main.overview._overview.controls._appDisplay._folderIcons.forEach(icon => {
+            icon.set_style(null);
+            icon._dialog._viewBox.set_style(null);
+        });
+        Main.panel.get_children().forEach(side => {
+            side.get_children().forEach(button => {
+                try {
+                    button.get_child_at_index(0).menu.box.set_style(null);
+                } catch (e) { }
+            });
+        });
 
         this.reset_panel_corners();
+        this.disconnect_panel_hide();
 
         delete this.background_settings;
         delete this.startup_complete_id;
         delete this.background_changed_id;
+        delete this.appfolder_icons_id;
     }
 
     _log(str) {
