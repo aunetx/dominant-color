@@ -1,5 +1,8 @@
 # dominant-color
-A gnome-shell extension to set overview and panel background color to wallpaper's primary color
+
+A gnome-shell extension to set overview and panel background color to wallpaper's primary color.
+
+*NB: this extension is currently only made as a design test, most importantly for https://gitlab.gnome.org/Teams/Design/whiteboards/-/issues/21. It contains bugs, but fixing side issues is for the moment not intended, as I try to adjust the design for the best before removing bugs and pushing it to https://extensions.gnome.org.*
 
 ## Installation
 
