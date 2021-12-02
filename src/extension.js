@@ -25,14 +25,22 @@ class Extension {
 
     on_startup_complete() {
         this.background_changed_id = this.background_settings.connect('changed', () => {
-            this.bg_notify_id = Main.layoutManager._backgroundGroup.get_child_at_index(0).connect('notify', this.on_bg_changed.bind(this))
+            Utils.setTimeout(this.update_color.bind(this), 100);
+            Utils.setTimeout(this.update_color.bind(this), 250);
+            Utils.setTimeout(this.update_color.bind(this), 500);
         });
         this.update_color();
+        this.remove_panel_corners();
     }
 
-    on_bg_changed() {
-        this.update_color();
-        Main.layoutManager._backgroundGroup.get_child_at_index(0).disconnect(this.bg_notify_id);
+    remove_panel_corners() {
+        Main.panel._leftCorner.hide();
+        Main.panel._rightCorner.hide();
+    }
+
+    reset_panel_corners() {
+        Main.panel._leftCorner.show();
+        Main.panel._rightCorner.show();
     }
 
     update_color() {
@@ -67,8 +75,37 @@ class Extension {
 
         let color = this.transform_color(color_parse[1].to_hls());
 
-        Main.overview._overview.set_background_color(color);
-        Main.panel.set_background_color(color);
+        this.apply_color(color);
+    }
+
+    bg_color(color) {
+        return `background-color:${color};`
+    }
+
+    apply_color(color) {
+        let color_str = color.to_string().slice(0, -2);
+
+        Main.overview._overview.set_style(this.bg_color(color_str));
+        Main.panel.set_style(this.bg_color(color_str));
+
+        let lighter_color = color.lighten();
+        let lighter_color_str = lighter_color.to_string().slice(0, -2);
+
+        Main.overview.dash._background.set_style(this.bg_color(lighter_color_str));
+
+        if (Main.overview._overview.controls._appDisplay._folderIcons.length > 0) {
+            this.apply_to_appfolder_icons(lighter_color_str);
+        }
+        Main.overview._overview.controls._appDisplay.disconnect(this.appfolder_icons_id);
+        this.appfolder_icons_id = Main.overview._overview.controls._appDisplay.connect('view-loaded', () => {
+            this.apply_to_appfolder_icons(lighter_color_str);
+        })
+    }
+
+    apply_to_appfolder_icons(color) {
+        Main.overview._overview.controls._appDisplay._folderIcons.forEach(icon => {
+            icon.set_style(this.bg_color(color));
+        });
     }
 
     transform_color([hue, lightness, saturation]) {
@@ -88,6 +125,8 @@ class Extension {
 
         Main.overview._overview.set_background_color(null);
         Main.panel.set_background_color(null);
+
+        this.reset_panel_corners();
 
         delete this.background_settings;
         delete this.startup_complete_id;
