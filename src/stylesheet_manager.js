@@ -1,17 +1,11 @@
-'use strict';
+import Gio from 'gi://Gio';
+import St from 'gi://St';
 
-const { Gio, St } = imports.gi;
 const ThemeContext = St.ThemeContext;
 
-const Me = imports.misc.extensionUtils.getCurrentExtension();
-const Utils = Me.imports.utilities;
-
-const EXT_PATH = Me.dir.get_path();
-const STYLESHEET_PATH = `${EXT_PATH}/_style.css`;
-
-
-var StylesheetManager = class StylesheetManager {
-    constructor() {
+export const StylesheetManager = class StylesheetManager {
+    constructor(dir) {
+        this.dir = dir;
         this.stylesheet_file = null;
     }
 
@@ -20,7 +14,7 @@ var StylesheetManager = class StylesheetManager {
             this.unload_stylesheet();
 
         let theme = ThemeContext.get_for_stage(global.stage).get_theme();
-        this.stylesheet_file = Me.dir.get_child(STYLESHEET_PATH);
+        this.stylesheet_file = this.dir.get_child("_style.css");
         theme.load_stylesheet(this.stylesheet_file);
     }
 
@@ -40,11 +34,11 @@ var StylesheetManager = class StylesheetManager {
         }
         `;
 
-        let file = Gio.file_new_for_path(STYLESHEET_PATH);
+        let file = Gio.file_new_for_path(`${this.dir.get_path()}/_style.css`);
         file.replace_contents(content, '', false, '', null);
     }
 
     _log(str) {
-        log(`[Dominant color] ${str}`);
+        console.log(`[Dominant color] ${str}`);
     }
 };

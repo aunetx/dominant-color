@@ -1,34 +1,34 @@
-'use strict';
-
-const Gio = imports.gi.Gio;
-const Main = imports.ui.main;
-
-const Me = imports.misc.extensionUtils.getCurrentExtension();
-
-const StylesheetManager = Me.imports.stylesheet_manager;
-const ColorManager = Me.imports.color_manager;
-const Utils = Me.imports.utilities;
+import Gio from 'gi://Gio';
+import * as Main from 'resource:///org/gnome/shell/ui/main.js';
+import { Extension } from 'resource:///org/gnome/shell/extensions/extension.js';
+import { StylesheetManager } from './stylesheet_manager.js';
+import { ColorManager } from './color_manager.js';
 
 const BackgroundSettings = new Gio.Settings({
     schema: 'org.gnome.desktop.background'
 });
 
 
-class Extension {
-    constructor() {
-        this.stylesheet_manager = new StylesheetManager.StylesheetManager;
-        this.color_manager = new ColorManager.ColorManager;
-    }
-
+export default class DominantColor extends Extension {
     enable() {
+        global.dominant_color = this;
+
+        this.stylesheet_manager = new StylesheetManager(this.dir);
+        this.color_manager = new ColorManager;
+
         this.background_changed_id = BackgroundSettings.connect(
             'changed',
             _ => {
-                Utils.setTimeout(
+                setTimeout(
                     this.color_manager.update_color.bind(this.color_manager),
                     350
                 );
             }
+        );
+
+        this.color_manager.connect(
+            'color-changed',
+            this.update.bind(this)
         );
 
         if (Main.layoutManager._startingUp)
@@ -37,12 +37,7 @@ class Extension {
                 this.color_manager.update_color.bind(this.color_manager)
             );
         else
-            this.update();
-
-        this.color_manager.connect(
-            'color-changed',
-            this.update.bind(this)
-        );
+            this.color_manager.update_color();
     }
 
     update() {
@@ -59,10 +54,6 @@ class Extension {
     }
 
     _log(str) {
-        log(`[Dominant color] ${str}`);
+        console.log(`[Dominant color] ${str}`);
     }
-}
-
-function init() {
-    return new Extension();
 }

@@ -4,10 +4,7 @@
   "uuid": "dominant-color@aunetx",
   "url": "https://github.com/aunetx/dominant-color",
   "shell-version": [
-    "41"
+    "45"
   ],
-  "version": 1,
-  "session-modes": [
-    "user"
-  ]
+  "version": 1
 }

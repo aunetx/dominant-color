@@ -1,17 +1,9 @@
-'use strict';
-
-const Clutter = imports.gi.Clutter;
-const Main = imports.ui.main;
+import Clutter from 'gi://Clutter';
+import GdkPixbuf from 'gi://GdkPixbuf';
+import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 const Signals = imports.signals;
 
-const Me = imports.misc.extensionUtils.getCurrentExtension();
-const Utils = Me.imports.utilities;
-
-const EXT_PATH = Me.dir.get_path();
-const PY_CMD_PATH = `${EXT_PATH}/script.py`;
-
-
-var ColorManager = class ColorManager {
+export const ColorManager = class ColorManager {
     constructor() {
         this.original_color = null;
         this.color = null;
@@ -26,30 +18,19 @@ var ColorManager = class ColorManager {
         }
 
         let wall_path = wall.get_content().background._file.get_path();
+        let texture = GdkPixbuf.Pixbuf.new_from_file(wall_path);
+        let scaled = texture.scale_simple(1, 1, 2);
 
-        Utils.spawnCommandLineAsync(`python ${PY_CMD_PATH} ${wall_path}`,
-            (ok, stdout, stderr, status) => {
-                if (ok) {
-                    if (status == 0) {
-                        this.set_color_from(stdout);
-                    }
-                    else
-                        this._log(`error in python script: \n${stderr}`);
-                } else
-                    this._log(`error calling python script: \n${stderr}`);
-            }
-        );
+        let pixel = scaled.pixel_bytes.toArray();
+        let red = pixel[0];
+        let green = pixel[1];
+        let blue = pixel[2];
+
+        this.set_color_from(red, green, blue);
     }
 
-    set_color_from(output) {
-        let color_parse = Clutter.color_from_string(output.toString());
-
-        if (!color_parse[0]) {
-            this._log(`could not parse color ${output.toString()}`);
-            return;
-        }
-
-        this.original_color = color_parse[1];
+    set_color_from(red, green, blue) {
+        this.original_color = new Clutter.Color({ red, green, blue });
         this.color = this.transform_color(this.original_color.to_hls());
 
         this.emit('color-changed', true);
@@ -71,7 +52,7 @@ var ColorManager = class ColorManager {
     }
 
     _log(str) {
-        log(`[Dominant color] ${str}`);
+        console.log(`[Dominant color] ${str}`);
     }
 };
 

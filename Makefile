@@ -1,27 +1,24 @@
 UUID = dominant-color@aunetx
-EXT_DIR = $(HOME)/.local/share/gnome-shell/extensions/$(UUID)/
 
-.PHONY: build_pkg build install remove clean
+.PHONY: build install remove clean
 
 
 build: clean
 	mkdir -p build/
-	cp -r src/* build/
-
-
-pkg: build
-	mkdir -p pkg/
-	cd build/ && zip -r ../pkg/$(UUID).zip .
+	cd src && gnome-extensions pack -f \
+		--extra-source=../metadata.json \
+		--extra-source=./color_manager.js \
+		--extra-source=./stylesheet_manager.js \
+		-o ../build
 
 
 install: build remove
-	mkdir -p $(EXT_DIR)
-	cp -r build/* $(EXT_DIR)
+	gnome-extensions install -f build/$(UUID).shell-extension.zip
 
 
 remove:
-	rm -rf $(EXT_DIR)
+	rm -rf $(HOME)/.local/share/gnome-shell/extensions/$(UUID)/
 
 
 clean:
-	rm -rf pkg/ build/
+	rm -rf build/
